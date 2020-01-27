@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# Quick script used to build a custom pve kernel by applying some patches first
+
+if ! test -d "/src/pve-kernel"; then
+  git clone git://git.proxmox.com/git/pve-kernel.git /src/pve-kernel
+fi
+
+cd /src/pve-kernel || exit 1
+
+# First patch the pve-kernel build workbench to get a custom build name
+for patch in /patches/*.patch; do 
+  echo "Applying patch '$patch'" 
+  patch -p1 < "${patch}"
+done
+
+# Now copy all of the "kernel" patches so the build script will see them
+cp /patches/kernel/*.patch patches/kernel
+
+make

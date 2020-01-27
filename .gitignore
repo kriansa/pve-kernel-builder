@@ -1,0 +1,3 @@
+# Ignore the path where we'll download the kernel sources
+src/**
+!src/.keep
