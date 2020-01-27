@@ -5,6 +5,9 @@ image:
 publish-image:
 	docker push kriansa/pve-kernel-builder:current
 
+pull-image:
+	docker pull kriansa/pve-kernel-builder:current
+
 # Open up a new container with the build environment set up
 build-env:
 	docker run --rm -it -v "$(shell pwd)/patches:/patches" -v "$(shell pwd)/src:/src" pve-kernel-builder:current /bin/bash
