@@ -14,12 +14,12 @@ pull-image:
 # Open up a new terminal with the build environment set up
 .PHONY: build-env
 build-env:
-	bin/build /bin/bash
+	bin/build --shell
 
 # Runs a container with the default build action
 .PHONY: build
 build:
-	bin/build kernel-build
+	bin/build
 
 .PHONY: deploy
 deploy:

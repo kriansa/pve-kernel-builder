@@ -21,8 +21,15 @@ packages:
   - git
 
 runcmd:
-  - systemctl enable docker.service
   - systemctl start --no-block docker.service
   - git clone https://github.com/kriansa/pve-kernel-builder.git /root/pve-kernel-builder
-  # - cd /root/pve-kernel-builder && mv ../.env . && make pull-image build
-  # - poweroff
+
+    # Move the .env to the build folder
+  - mv /root/.env /root/pve-kernel-builder
+
+    # Build the image
+  - cd /root/pve-kernel-builder && make pull-image build > /var/log/kernel-builder.log 2>&1
+
+    # Now move the logs to the S3, then shutdown
+  - aws s3 cp /var/log/kernel-builder.log s3://${artifacts_s3_bucket}/kernel-builder/build-$(date '+%Y-%m-%dT%H:%I:%S%Z').log
+  - poweroff
