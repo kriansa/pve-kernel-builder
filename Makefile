@@ -1,17 +1,29 @@
 # Builds the docker image used to build the kernel
-image:
+.PHONY: build-image
+build-image:
 	cd builder && docker build . -t pve-kernel-builder:current -t kriansa/pve-kernel-builder:current
 
+.PHONY: publish-image
 publish-image:
 	docker push kriansa/pve-kernel-builder:current
 
+.PHONY: pull-image
 pull-image:
 	docker pull kriansa/pve-kernel-builder:current
 
-# Open up a new container with the build environment set up
+# Open up a new terminal with the build environment set up
+.PHONY: build-env
 build-env:
-	docker run --rm -it -v "$(shell pwd)/patches:/patches" -v "$(shell pwd)/src:/src" pve-kernel-builder:current /bin/bash
+	bin/build /bin/bash
 
-# Runs the docker image with the default build action
+# Runs a container with the default build action
+.PHONY: build
 build:
-	docker run --rm -it -v "$(shell pwd)/patches:/patches" -v "$(shell pwd)/src:/src" pve-kernel-builder:current
+	bin/build kernel-build
+
+.PHONY: deploy
+deploy:
+	cd ops/terraform && terraform-auto \
+		--environment-file="../../.env" \
+		--backend-template-file="backend.tf-template" \
+		apply $(args)

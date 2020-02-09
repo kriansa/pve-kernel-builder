@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+#
+# Runs the kernel build using a Docker container
+#
+# Usage: bin/build [DOCKER ARGS]
+
+cd "$(dirname "$0")/.." || exit
+
+set -a
+source ".env"
+set +a
+
+docker run --rm -it -v "$(pwd)/patches:/patches" \
+  -v "$(pwd)/src:/src" \
+  -e "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" \
+  -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
+  -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
+  -e "ARTIFACTS_S3_BUCKET=$ARTIFACTS_S3_BUCKET" \
+  -e "REPO_S3_BUCKET=$REPO_S3_BUCKET" \
+  kriansa/pve-kernel-builder:current "$@"

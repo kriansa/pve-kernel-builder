@@ -8,8 +8,14 @@ RUN apt-get update && apt-get upgrade -y
 
 # Install build dependencies
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get install -y git nano screen patch fakeroot build-essential devscripts libncurses5 libncurses5-dev libssl-dev bc flex bison libelf-dev libaudit-dev libgtk2.0-dev libperl-dev libslang2-dev asciidoc xmlto gnupg gnupg2 rsync lintian debhelper libdw-dev libnuma-dev sphinx-common asciidoc-base automake cpio dh-python file gcc kmod libiberty-dev libpve-common-perl libtool perl-modules python-minimal sed tar zlib1g-dev lz4 && \
-    apt-get clean
+RUN apt-get install -y git awscli nano screen patch fakeroot build-essential \
+    devscripts libncurses5 libncurses5-dev libssl-dev bc flex bison libelf-dev \
+    libaudit-dev libgtk2.0-dev libperl-dev libslang2-dev asciidoc xmlto gnupg \
+    gnupg2 rsync lintian debhelper libdw-dev libnuma-dev sphinx-common \
+    asciidoc-base automake cpio dh-python file gcc kmod libiberty-dev \
+    libpve-common-perl libtool perl-modules python-minimal sed tar zlib1g-dev \
+    lz4 && \
+    apt-get clean && apt-get autoremove
 
 # Add build script helper
 ADD scripts/kernel-build /usr/local/bin/kernel-build
@@ -21,4 +27,4 @@ VOLUME /src
 VOLUME /patches
 
 WORKDIR /src
-ENTRYPOINT ["kernel-build"]
+CMD ["/bin/bash"]

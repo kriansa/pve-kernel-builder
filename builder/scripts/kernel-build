@@ -2,19 +2,70 @@
 #
 # Quick script used to build a custom pve kernel by applying some patches first
 
-if ! test -d "/src/pve-kernel"; then
-  git clone git://git.proxmox.com/git/pve-kernel.git /src/pve-kernel
-fi
+main() {
+  pull_cache
+  download_sources
+  patch_kernel
+  clean_patches
+  compile
+  clean_patches
+  save_cache
+}
 
-cd /src/pve-kernel || exit 1
+compile() {
+  output=$(make output-filename)
 
-# First patch the pve-kernel build workbench to get a custom build name
-for patch in /patches/*.patch; do 
-  echo "Applying patch '$patch'" 
-  patch -p1 < "${patch}"
-done
+  make "$output"
 
-# Now copy all of the "kernel" patches so the build script will see them
-cp /patches/kernel/*.patch patches/kernel
+  aws s3 cp "$output" "s3://$REPO_S3_BUCKET/deb/$output"
+}
 
-make
+download_sources() {
+  if ! test -d "/src/pve-kernel"; then
+    git clone git://git.proxmox.com/git/pve-kernel.git /src/pve-kernel
+  fi
+
+  cd /src/pve-kernel || exit 1
+
+  # Ensure the sources are up to date
+  git pull
+}
+
+pull_cache() {
+  cd /src || exit 1
+
+  # Return early if the object doesn't exist
+  aws s3api head-object --bucket "$ARTIFACTS_S3_BUCKET" \
+    --key "kernel-cache/pve-kernel.tar" > /dev/null 2>&1; status=$?
+  test $status -eq 0 || return
+
+  aws s3 cp "s3://$ARTIFACTS_S3_BUCKET/kernel-cache/pve-kernel.tar" .
+  tar -xpf pve-kernel.tar
+  rm pve-kernel.tar
+}
+
+save_cache() {
+  cd /src || exit 1
+  tar -cf pve-kernel.tar -C pve-kernel .
+  aws s3 cp pve-kernel.tar "s3://$ARTIFACTS_S3_BUCKET/kernel-cache/pve-kernel.tar"
+  rm pve-kernel.tar
+}
+
+patch_kernel() {
+  # First patch the pve-kernel build workbench to get a custom build name
+  for patch in /patches/*.patch; do 
+    echo "Applying patch '$patch'" 
+    patch -p1 < "${patch}"
+  done
+
+  # Now copy all of the "kernel" patches so the build script will see them
+  cp /patches/kernel/*.patch patches/kernel
+}
+
+clean_patches() {
+  # Undo all changes patches done to the existing code
+  git clean -fd
+  git checkout -- .
+}
+
+main
