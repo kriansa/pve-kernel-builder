@@ -3,21 +3,40 @@
 # Quick script used to build a custom pve kernel by applying some patches first
 
 main() {
+  log "Starting build process"
   pull_cache
   download_sources
+  clean_patches
   patch_kernel
-  clean_patches
   compile
-  clean_patches
+  publish
   save_cache
+  log "Build process finished in $(format_time $SECONDS)"
+}
+
+log() {
+  echo "=========================================================="
+  echo "= $*"
+  echo "=========================================================="
+}
+
+format_time() {
+  seconds=$1
+  date -ud "0 $seconds seconds" +"%H:%M:%S"
 }
 
 compile() {
-  output=$(make output-filename)
+  log "Starting kernel compilation"
+  compilation_started=$SECONDS
+  make all
+  log "Kernel compiled successfully in $(format_time $(( SECONDS -  compilation_started )))"
+}
 
-  make "$output"
-
-  aws s3 cp "$output" "s3://$REPO_S3_BUCKET/deb/$output"
+publish() {
+  for file in *.deb; do
+    log "Copying '$file' to S3 bucket $REPO_S3_BUCKET"
+    aws s3 cp "$file" "s3://$REPO_S3_BUCKET/deb/"
+  done
 }
 
 download_sources() {
@@ -37,33 +56,46 @@ pull_cache() {
   # Return early if the object doesn't exist
   aws s3api head-object --bucket "$ARTIFACTS_S3_BUCKET" \
     --key "kernel-cache/pve-kernel.tar" > /dev/null 2>&1; status=$?
-  test $status -eq 0 || return
+  if ! [ $status -eq 0 ]; then
+    log "Cache file not found. Proceeding with full build."
+    return
+  fi
 
-  aws s3 cp "s3://$ARTIFACTS_S3_BUCKET/kernel-cache/pve-kernel.tar" .
+  log "Pulling build cache from the S3 bucket $ARTIFACTS_S3_BUCKET"
+  aws s3 cp "s3://$ARTIFACTS_S3_BUCKET/kernel-builder/pve-kernel.tar" .
   tar -xpf pve-kernel.tar
   rm pve-kernel.tar
 }
 
 save_cache() {
+  clean_patches
+
+  # Clean built files (over 20gb)
+  cd /src/pve-kernel || exit 1
+  make clean
+
   cd /src || exit 1
-  tar -cf pve-kernel.tar -C pve-kernel .
-  aws s3 cp pve-kernel.tar "s3://$ARTIFACTS_S3_BUCKET/kernel-cache/pve-kernel.tar"
+  tar -cf pve-kernel.tar pve-kernel
+  log "Copying build cache to the S3 bucket $ARTIFACTS_S3_BUCKET"
+  aws s3 cp pve-kernel.tar "s3://$ARTIFACTS_S3_BUCKET/kernel-builder/pve-kernel.tar"
   rm pve-kernel.tar
 }
 
 patch_kernel() {
   # First patch the pve-kernel build workbench to get a custom build name
   for patch in /patches/*.patch; do 
-    echo "Applying patch '$patch'" 
+    log "Applying patch to the pve-kernel: '$patch'" 
     patch -p1 < "${patch}"
   done
 
   # Now copy all of the "kernel" patches so the build script will see them
+  log "Copying kernel patch files to the pve-kernel"
   cp /patches/kernel/*.patch patches/kernel
 }
 
 clean_patches() {
   # Undo all changes patches done to the existing code
+  log "Cleaning up changes to the repository"
   git clean -fd
   git checkout -- .
 }

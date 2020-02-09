@@ -48,8 +48,8 @@ resource "aws_spot_instance_request" "main" {
   ami      = data.aws_ami.amazon_linux.id
   key_name = aws_key_pair.main.key_name
 
-  # This instance size is enough for a VPN
-  instance_type = "t3a.nano"
+  # An instance powerful enough to compile it quickly
+  instance_type = "m5.4xlarge"
 
   # The role used for this EC2
   iam_instance_profile = aws_iam_instance_profile.main.name
@@ -74,90 +74,12 @@ resource "aws_spot_instance_request" "main" {
     Name = "Kernel Builder"
   }
 
-  # user_data = <<-SCRIPT
-  #   #!/usr/bin/env bash
-  #   # Bootstrap the server using the bundled playbook
-  #   # Current version: ${data.aws_s3_bucket_object.release_id.body}
-  #   #
-  #   aws s3 cp s3://${var.artifacts_s3_bucket}/vpn/playbook.run /root/playbook.run
-  #   chmod +x /root/playbook.run
-  #   yum install -y python2-pip
-  #   /root/playbook.run
-  #   rm /root/playbook.run
-  # SCRIPT
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 70
+  }
 
   # Spot attributes
   wait_for_fulfillment = true
   spot_type = "one-time"
-}
-
-resource "aws_cloudwatch_metric_alarm" "cpu_alarm" {
-  alarm_name          = "EC2 ${aws_spot_instance_request.main.tags["Name"]} - CPU usage above 80%"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = "2"
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/EC2"
-  period              = "60"
-  statistic           = "Maximum"
-  threshold           = "80"
-
-  dimensions = {
-    InstanceId = aws_spot_instance_request.main.id
-  }
-
-  alarm_actions = [data.aws_sns_topic.alarms.arn]
-}
-
-resource "aws_cloudwatch_metric_alarm" "memory_alarm" {
-  alarm_name          = "EC2 ${aws_spot_instance_request.main.tags["Name"]} - Memory usage above 80%"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = "2"
-  metric_name         = "mem_used_percent"
-  namespace           = "CWAgent"
-  period              = "60"
-  statistic           = "Maximum"
-  threshold           = "80"
-
-  dimensions = {
-    InstanceId = aws_spot_instance_request.main.id
-  }
-
-  alarm_actions = [data.aws_sns_topic.alarms.arn]
-}
-
-resource "aws_cloudwatch_metric_alarm" "disk_alarm" {
-  alarm_name          = "EC2 ${aws_spot_instance_request.main.tags["Name"]} - Disk usage above 80%"
-  comparison_operator = "GreaterThanOrEqualToThreshold"
-  evaluation_periods  = "2"
-  metric_name         = "disk_used_percent"
-  namespace           = "CWAgent"
-  period              = "300"
-  statistic           = "Maximum"
-  threshold           = "80"
-
-  dimensions = {
-    InstanceId = aws_spot_instance_request.main.id
-    device     = "nvme0n1p1"
-    fstype     = "xfs"
-    path       = "/"
-  }
-
-  alarm_actions = [data.aws_sns_topic.alarms.arn]
-}
-
-resource "aws_cloudwatch_metric_alarm" "cpu_credits" {
-  alarm_name          = "EC2 ${aws_spot_instance_request.main.tags["Name"]} - CPU credits too low"
-  comparison_operator = "LessThanOrEqualToThreshold"
-  evaluation_periods  = "60"
-  metric_name         = "CPUCreditBalance"
-  namespace           = "AWS/EC2"
-  period              = "60"
-  statistic           = "Maximum"
-  threshold           = "0"
-
-  dimensions = {
-    InstanceId = aws_spot_instance_request.main.id
-  }
-
-  alarm_actions = [data.aws_sns_topic.alarms.arn]
 }
