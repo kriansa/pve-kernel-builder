@@ -21,7 +21,9 @@ fi
 docker run --rm "$extra_args" --name "kernel-builder" \
   -v "$(pwd)/patches:/patches" \
   -v "$(pwd)/src:/src" \
+  -v "$HOME/.aws/credentials:/root/.aws/credentials" \
   -e "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" \
+  -e "AWS_PROFILE=$AWS_PROFILE" \
   -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
   -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
   -e "ARTIFACTS_S3_BUCKET=$ARTIFACTS_S3_BUCKET" \
