@@ -14,10 +14,14 @@ cd "$(dirname "$0")/.." || exit
 set -a && source ".env" && set +a
 
 if [ "$1" == "--shell" ]; then
-  extra_args=-it
+  extra_args=(-it)
   run_cmd="/bin/bash"
 else
   run_cmd="kernel-build"
+fi
+
+if [ -n "$AWS_PROFILE" ]; then
+  extra_args+=(-e "AWS_PROFILE=$AWS_PROFILE")
 fi
 
 docker run --rm --name "kernel-builder" \
@@ -25,10 +29,7 @@ docker run --rm --name "kernel-builder" \
   -v "$(pwd)/src:/src" \
   -v "$HOME/.aws/credentials:/root/.aws/credentials" \
   -e "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION" \
-  -e "AWS_PROFILE=$AWS_PROFILE" \
-  -e "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
-  -e "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
   -e "ARTIFACTS_S3_BUCKET=$ARTIFACTS_S3_BUCKET" \
   -e "REPO_S3_BUCKET=$REPO_S3_BUCKET" \
-  $extra_args \
+  "${extra_args[@]}" \
   kriansa/pve-kernel-builder:current "$run_cmd"
