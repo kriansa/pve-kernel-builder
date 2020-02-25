@@ -65,8 +65,8 @@ resource "aws_security_group" "ec2_instance" {
 }
 
 resource "aws_security_group" "allow_ssh_from_vpn" {
-  name        = "AllowSSHFromVPN"
-  description = "Allow inbound SSH traffic from the VPN"
+  name        = "AllowSSHFromEverywhere"
+  description = "Allow inbound SSH traffic everywhere."
   vpc_id      = aws_vpc.main.id
 
   ingress {
