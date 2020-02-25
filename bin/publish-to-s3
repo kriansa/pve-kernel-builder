@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#
+# This script copies all content from the folder onto the $REPO_S3_BUCKET
+
+set -euo pipefail
+
+source=${1:-REPO_ROOT}
+aws s3 rm --recursive "s3://$REPO_S3_BUCKET/$REPO_S3_APT_PATH"
+aws s3 sync --acl public-read "$source" "s3://$REPO_S3_BUCKET/$REPO_S3_APT_PATH/"

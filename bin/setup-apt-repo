@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+#
+# Creates an APT repository from .deb files
+#
+# This script depends on gpg and apt-utils
+
+set -euo pipefail
+
+# Parameters
+GPG_KEY_FILE=gpg-private-key.asc
+mapfile -t DEB_PACKAGES < <(compgen -G "*.deb")
+OUTPUT_PATH=REPO_ROOT
+REPO_NAME=kernel-normrr
+REPO_DESC="Kriansa APT Repository"
+REPO_ARCH=amd64
+REPO_CODENAME=buster
+
+# Write settings to a temp file
+# shellcheck disable=SC2064
+tmp_release=$(mktemp) && trap "rm $tmp_release" EXIT
+cat > "$tmp_release" <<BLOCK
+APT::FTPArchive::Release::Codename "$REPO_CODENAME";
+APT::FTPArchive::Release::Components "$REPO_NAME";
+APT::FTPArchive::Release::Label "$REPO_DESC";
+APT::FTPArchive::Release::Architectures "$REPO_ARCH";
+BLOCK
+
+# Import the GPG key to sign the repo
+# shellcheck disable=SC2064
+GNUPG_HOME=$(mktemp -d) && export GNUPG_HOME && trap "rm -rf $GNUPG_HOME" EXIT
+gpg_key_id=$(gpg --show-keys "$GPG_KEY_FILE" | head -2 | tail -1 | awk '{ print $1 }')
+gpg --quiet --import "$GPG_KEY_FILE"
+
+# Create a tree structure for the apt repo
+mkdir -p "$OUTPUT_PATH/dists/$REPO_CODENAME/$REPO_NAME/binary-$REPO_ARCH" || true
+cp -r "${DEB_PACKAGES[@]}" "$OUTPUT_PATH/dists/$REPO_CODENAME/$REPO_NAME/binary-$REPO_ARCH"
+
+# Create metadata that apt can understand
+( cd "$OUTPUT_PATH" && apt-ftparchive packages dists > dists/$REPO_CODENAME/$REPO_NAME/binary-$REPO_ARCH/Packages )
+apt-ftparchive release -c "$tmp_release" "$OUTPUT_PATH/dists/$REPO_CODENAME" | \
+  gpg --armor --clear-sign --local-user "$gpg_key_id" > "$OUTPUT_PATH/dists/$REPO_CODENAME/InRelease"
+
+# Publish the GPG public key
+gpg --armor --export "$gpg_key_id" > "$OUTPUT_PATH/repo-gpg-key.asc"

@@ -8,14 +8,9 @@ variable "repo_s3_bucket" {
   description = "The S3 bucket where the DEB repo is located"
 }
 
-variable "artifacts_s3_bucket" {
+variable "repo_s3_apt_path" {
   type        = string
-  description = "The name of the S3 bucket we use to store application artifacts."
-}
-
-variable "vpc_id" {
-  type        = string
-  description = "The ID of the existing VPC"
+  description = "The path on S3 where the repository should be stored"
 }
 
 variable "aws_default_region" {

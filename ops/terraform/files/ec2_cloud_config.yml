@@ -1,0 +1,28 @@
+#cloud-config
+
+# Update packages (except kernel)
+repo_update: true
+repo_upgrade: all
+
+# Install packages
+packages:
+  - docker
+  - https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+
+runcmd:
+    # Now copy the CloudWatch agent config to the machine
+  - aws s3 cp s3://${artifacts_s3_bucket}/${cloudwatch_config_path} /opt/aws/amazon-cloudwatch-agent/etc/config.json
+  - /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/config.json
+
+    # Then start docker
+  - systemctl start --no-block docker
+
+    # Copy the necessary files to the build folder
+  - aws s3 cp s3://${artifacts_s3_bucket}/${env_file_path} /root/.env
+  - aws s3 cp s3://${artifacts_s3_bucket}/gpg-private-key.asc /root/gpg-private-key.asc
+
+    # Build the image
+  - cd /root && docker run --rm --env-file=".env" -v "$(pwd):/src" kriansa/pve-kernel-builder:current > /var/log/kernel-builder.log 2>&1
+
+    # When all all is finished, we can shutdown
+  - poweroff

@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+#
+# Pipeline of build and publish
+
+set -euo pipefail
+
+main() {
+  log "Starting the build pipeline"
+  cd /src
+
+  process "Kernel build" build-kernel
+  process "APT repository setup" setup-apt-repo
+  process "S3 publishing" publish-to-s3
+
+  log "Build pipeline finished in $(format_time $SECONDS)"
+}
+
+process() {
+  local name=$1; shift
+  local cmd=("$@")
+  local process_started=$SECONDS
+
+  log "Starting $name process..."
+
+  if "${cmd[@]}"; then
+    log "$name process finished successfully in $(format_time $(( SECONDS -  process_started )))"
+  else
+    log "$name process failed after $(format_time $(( SECONDS -  process_started )))" >&2
+    exit 1
+  fi
+}
+
+log() {
+  echo "[$(date --utc --iso-8601=seconds)] $*"
+}
+
+format_time() {
+  seconds=$1
+  date -ud "0 $seconds seconds" +"%H:%M:%S"
+}
+
+main

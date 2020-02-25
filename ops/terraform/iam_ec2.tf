@@ -30,7 +30,7 @@ resource "aws_iam_policy" "enable_access_to_kernel_builder_resources" {
     {
       "Effect": "Allow",
       "Action": ["s3:ListBucket"],
-      "Resource": ["arn:aws:s3:::${var.repo_s3_bucket}", "arn:aws:s3:::${var.artifacts_s3_bucket}"]
+      "Resource": ["arn:aws:s3:::${var.repo_s3_bucket}", "arn:aws:s3:::${data.aws_s3_bucket.artifacts.id}"]
     },
     {
       "Effect": "Allow",
@@ -41,7 +41,7 @@ resource "aws_iam_policy" "enable_access_to_kernel_builder_resources" {
         "s3:PutObject",
         "s3:PutObjectAcl"
       ],
-      "Resource": ["arn:aws:s3:::${var.repo_s3_bucket}/*", "arn:aws:s3:::${var.artifacts_s3_bucket}/*"]
+      "Resource": ["arn:aws:s3:::${var.repo_s3_bucket}/*", "arn:aws:s3:::${data.aws_s3_bucket.artifacts.id}/*"]
     }
   ]
 }

@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+#
+# Quick script used to build a custom pve kernel by applying some patches first
+
+set -euo pipefail
+
+main() {
+  download_sources
+  apply_patches
+  compile_kernel
+  compile_meta_packages
+}
+
+log() {
+  echo
+  echo "==> $*"
+}
+
+compile_kernel() {
+  cd /src/pve-kernel
+
+  log "Starting kernel compilation"
+
+  # Start the most painful and slow process
+  make all
+
+  # Make sure we move the compiled files to the root path
+  mv ./*.deb /src
+
+  log "Kernel compiled successfully"
+}
+
+compile_meta_packages() {
+  cd /src/pve-kernel-meta
+
+  log "Starting kernel-meta compilation"
+
+  # Compile the meta files (just a placeholder for others)
+  make deb
+
+  # Make sure we move the compiled files to the root path
+  mv ./*.deb /src
+
+  log "Meta packages compiled successfully"
+}
+
+download_sources() {
+  log "Cloning Proxmox Kernel repositories"
+  git clone git://git.proxmox.com/git/pve-kernel.git /src/pve-kernel
+  git clone git://git.proxmox.com/git/pve-kernel-meta.git /src/pve-kernel-meta
+}
+
+apply_patches() {
+  cd /src/pve-kernel
+
+  # First patch the pve-kernel build workbench to get a custom build name
+  for patch in /patches/builder/*.patch; do
+    log "Applying patch to the pve-kernel: '$patch'"
+    patch -p1 < "${patch}"
+  done
+
+  # Now copy all of the "kernel" patches so the build script will see them
+  log "Copying kernel patch files to the pve-kernel"
+  cp /patches/kernel/*.patch patches/kernel
+
+  # Now, apply the patches to the meta repository
+  cd /src/pve-kernel-meta || exit 1
+  # This patch can't be made into a .patch file so we use a dynamic patch
+  log "Applying patch to the kernel-meta repo"
+  sed -i'' "s/-pve$/-pve-normrr/" Makefile
+}
+
+main
