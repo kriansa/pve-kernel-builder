@@ -97,6 +97,10 @@ setting up the repository like that (remember to run all these commands as **roo
 If the compilation does not succeed and you can't see files at your repo S3 bucket, then you can
 check the logs on CloudWatch, under the `Kernel-Builder` log group.
 
+## License
+
+Apache 2.0
+
 [hp-workaround]: https://support.hpe.com/hpesc/public/docDisplay?docId=emr_na-c04781229
 [patch]: patches/kernel/0099-iommu-bypass-intel-rmrr-restriction.patch
 [gpg-tutorial]: https://github.com/kriansa/til/blob/master/security/gnupg.md
