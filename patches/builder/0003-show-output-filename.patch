@@ -1,0 +1,12 @@
+diff --git a/Makefile b/Makefile
+index b6ef220..a5c15a8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -143,3 +143,7 @@ abi-tmp-${KVNAME}:
+ clean:
+ 	rm -rf *~ build *.prepared ${KERNEL_CFG_ORG}
+ 	rm -f *.deb *.changes *.buildinfo
++
++.PHONY: output-filename
++output-filename:
++	@echo ${DST_DEB}
