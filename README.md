@@ -1,6 +1,9 @@
 # Proxmox custom Kernel compiler
 
-Enables compiling automatically custom kernel images with patches for `pve-kernels`.
+Fully automated kernel image builder with custom patches for `pve-kernels`.
+
+It looks for new commits at the [pve-kernel repository][pve-kernel-repo] every day and initiate a
+build process if necessary, then publish them to an APT repository on a S3 bucket of your choice.
 
 Currently it's being used to compile kernel for a RMRR issue that HP Proliant Microserver Gen8 has
 when passing through PCI devices.
@@ -36,8 +39,13 @@ Feb 2020).
    This bucket **must** be named `kernel-builder-artifacts-<AWS_REGION>-<AWS_ACCOUNT_ID>`
 5. A [GPG private key created][gpg-tutorial] and saved to the Artifacts S3 Bucket.
    This file **must** be named `gpg-private-key.asc`
+ 
+## Setup
 
-## Setup the project
+To start using this project, first ensure you have all the dependencies above. Then, let's setup
+this at the server side, then at the client (your Proxmox instance).
+
+### 1. Setup the project on the server
 
 Once you satisfied all dependencies above, you will configure the `.env` file at the root folder of
 the project. Ensure you have your AWS profile set correctly on your `~/.aws/credentials`.
@@ -51,16 +59,17 @@ $ make build-image publish-image
 ```
 
 Once it's finished, you can deploy. A deploy means the infrastructure needed for the build service
-to run will spin up as well as with one EC2 instance that will run the build. Once the build is
-finished, the EC2 instance will automatically shutdown and terminate. You can run the deploy command
-as many times as you want, each time it will spin up only the required pieces (in which case, the
-EC2 instance) and then terminate after finished.
+to run will be prepared for builds, as well as a lambda function will be set to run daily. 
 
 ```shell
 $ make deploy
 ```
 
-## Setup repository
+After the deploy, the needed infrastructure to build the kernels will be on your AWS account, but no
+Kernel is built yet. You will need to [trigger the build manually][#manually-running-a-build] for
+the first time.
+
+### 2. Setup your local APT repository
 
 To get started using the compiled kernels from this project, you need to configure your Proxmox
 instances to use your new repository to get the `pve-kernel-5.3` package. That can be done by
@@ -97,6 +106,30 @@ setting up the repository like that (remember to run all these commands as **roo
 If the compilation does not succeed and you can't see files at your repo S3 bucket, then you can
 check the logs on CloudWatch, under the `Kernel-Builder` log group.
 
+## Building locally
+
+If you just want to build it locally, then just run the following:
+
+```shell
+$ make build-env
+$ build-kernel
+```
+
+This will make the .deb files locally available. If you wish to publish them to the S3 bucket, then:
+
+```shell
+$ setup-apt-repo && publish-to-s3
+```
+
+## Manually running a build
+
+By default, a Lambda function will check for updates on the [pve-kernel repository][pve-kernel-repo]
+daily. However, if you need to trigger the build process manually, you can just run:
+
+```
+$ make trigger-kernel-build
+```
+
 ## License
 
 Apache 2.0
@@ -104,3 +137,4 @@ Apache 2.0
 [hp-workaround]: https://support.hpe.com/hpesc/public/docDisplay?docId=emr_na-c04781229
 [patch]: patches/kernel/0099-iommu-bypass-intel-rmrr-restriction.patch
 [gpg-tutorial]: https://github.com/kriansa/til/blob/master/security/gnupg.md
+[pve-kernel-repo]: https://git.proxmox.com/?p=pve-kernel.git;a=summary

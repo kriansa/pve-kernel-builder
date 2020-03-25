@@ -32,6 +32,11 @@ build-env:
 		-it \
 		${DOCKER_IMAGE_NAME}:current /bin/bash
 
+.PHONY: trigger-kernel-build
+trigger-kernel-build:
+	@source ./.env && aws ec2 run-instances \
+		--launch-template 'LaunchTemplateName=kernel-builder,Version=$Latest'
+
 .PHONY: deploy
 deploy:
 	@cd ops/terraform && terraform-auto \
