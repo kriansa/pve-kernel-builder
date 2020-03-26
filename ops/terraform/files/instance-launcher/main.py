@@ -15,7 +15,7 @@ def handler(event, context):
 
 def clone_repo():
     subprocess \
-        .Popen(["git", "clone", "--depth", "1", "git://git.proxmox.com/git/pve-kernel.git", "/tmp/pve-kernel"], stdout=subprocess.PIPE, stderr=subprocess.PIPE) \
+        .Popen(["git", "clone", "--depth", "1", "--branch", "pve-kernel-5.3", "git://git.proxmox.com/git/pve-kernel.git", "/tmp/pve-kernel"], stdout=subprocess.PIPE, stderr=subprocess.PIPE) \
         .communicate()
 
 def get_last_commit():

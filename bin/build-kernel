@@ -46,8 +46,8 @@ compile_meta_packages() {
 
 download_sources() {
   log "Cloning Proxmox Kernel repositories"
-  git clone git://git.proxmox.com/git/pve-kernel.git /src/pve-kernel
-  git clone git://git.proxmox.com/git/pve-kernel-meta.git /src/pve-kernel-meta
+  git clone --depth 1 --branch pve-kernel-5.3 git://git.proxmox.com/git/pve-kernel.git /src/pve-kernel
+  git clone --depth 1 --branch pve-kernel-5.3 git://git.proxmox.com/git/pve-kernel-meta.git /src/pve-kernel-meta
 }
 
 apply_patches() {
