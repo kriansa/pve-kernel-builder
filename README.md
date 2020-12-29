@@ -1,5 +1,10 @@
 # Proxmox custom Kernel compiler
 
+> Unmaintained. Although this infrastructure allows one to use it to compile kernel easily using
+> AWS, the purpose of this whole project was to serve as a workaround for a bug affecting HP Gen8
+> Proliant Microserver, which I don't use anymore. Also, pve has upgraded the kernel and after 5.4
+> the RMRR patch doesn't work anymore.
+
 Fully automated kernel image builder with custom patches for `pve-kernels`.
 
 It looks for new commits at the [pve-kernel repository][pve-kernel-repo] every day and initiate a
